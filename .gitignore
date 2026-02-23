@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Excel data files (not needed in repo — we use data.json)
+*.xlsx
+*.xls
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+
+# Package files
+package.json
+package-lock.json
+
+# Analysis scripts (dev only)
+analyze*.js

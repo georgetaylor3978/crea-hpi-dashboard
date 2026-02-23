@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CREA Housing Price Index Dashboard</title>
+  <meta name="description"
+    content="Interactive Canadian Real Estate Association MLS® HPI Dashboard with chart export for social media">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </div>
+        <div>
+          <h1>CREA HPI Dashboard</h1>
+          <p class="subtitle">MLS® Home Price Index · Canada</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="data-status" id="dataStatus">No data loaded</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <section class="controls-bar">
+    <div class="controls-content">
+      <!-- Row 1: Primary filters -->
+      <div class="controls-row">
+        <div class="control-group">
+          <label for="locationSelect">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            Location
+          </label>
+          <select id="locationSelect" disabled>
+            <option value="">Load data first...</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="propertyType">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18" />
+              <path d="M9 21V9" />
+            </svg>
+            Property Type
+          </label>
+          <select id="propertyType" disabled>
+            <option value="Composite">Composite</option>
+            <option value="Single_Family">Single Family</option>
+            <option value="One_Storey">One Storey</option>
+            <option value="Two_Storey">Two Storey</option>
+            <option value="Townhouse">Townhouse</option>
+            <option value="Apartment">Apartment</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="chartType">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+            Chart Data
+          </label>
+          <select id="chartType" disabled>
+            <option value="benchmark">Benchmark Price ($)</option>
+            <option value="hpi">HPI Index</option>
+            <option value="both">Both (Dual Axis)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2: Date range & comparison -->
+      <div class="controls-row">
+        <div class="control-group date-group">
+          <label>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Date Range
+          </label>
+          <div class="date-range">
+            <div class="month-picker-trigger" id="dateFromTrigger" data-target="dateFrom">
+              <span class="mp-label" id="dateFromLabel">From...</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <span class="date-separator">→</span>
+            <div class="month-picker-trigger" id="dateToTrigger" data-target="dateTo">
+              <span class="mp-label" id="dateToLabel">To...</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <!-- Quick range buttons -->
+            <div class="quick-ranges">
+              <button class="quick-btn" data-years="1">1Y</button>
+              <button class="quick-btn" data-years="3">3Y</button>
+              <button class="quick-btn" data-years="5">5Y</button>
+              <button class="quick-btn active" data-years="10">10Y</button>
+              <button class="quick-btn" data-years="0">All</button>
+            </div>
+          </div>
+          <!-- Hidden inputs to hold actual values -->
+          <input type="hidden" id="dateFrom">
+          <input type="hidden" id="dateTo">
+        </div>
+
+        <div class="control-group compare-group">
+          <label for="compareLocation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Compare With
+          </label>
+          <select id="compareLocation" disabled>
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Month Picker Popup -->
+  <div class="month-picker-popup" id="monthPickerPopup">
+    <div class="mp-header">
+      <button class="mp-nav" id="mpPrevYear">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <span class="mp-year" id="mpYear">2025</span>
+      <button class="mp-nav" id="mpNextYear">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+    <div class="mp-grid" id="mpGrid">
+      <button class="mp-month" data-month="0">Jan</button>
+      <button class="mp-month" data-month="1">Feb</button>
+      <button class="mp-month" data-month="2">Mar</button>
+      <button class="mp-month" data-month="3">Apr</button>
+      <button class="mp-month" data-month="4">May</button>
+      <button class="mp-month" data-month="5">Jun</button>
+      <button class="mp-month" data-month="6">Jul</button>
+      <button class="mp-month" data-month="7">Aug</button>
+      <button class="mp-month" data-month="8">Sep</button>
+      <button class="mp-month" data-month="9">Oct</button>
+      <button class="mp-month" data-month="10">Nov</button>
+      <button class="mp-month" data-month="11">Dec</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Summary Cards -->
+    <div class="summary-cards" id="summaryCards">
+      <div class="card" id="cardLatest">
+        <div class="card-label">Latest Price</div>
+        <div class="card-value" id="latestPrice">—</div>
+        <div class="card-sub" id="latestDate">—</div>
+      </div>
+      <div class="card" id="cardChange1Y">
+        <div class="card-label">1-Year Change</div>
+        <div class="card-value" id="change1Y">—</div>
+        <div class="card-sub">Year over Year</div>
+      </div>
+      <div class="card" id="cardChange5Y">
+        <div class="card-label">5-Year Change</div>
+        <div class="card-value" id="change5Y">—</div>
+        <div class="card-sub">Since 5 years ago</div>
+      </div>
+      <div class="card" id="cardAllTime">
+        <div class="card-label">All-Time High</div>
+        <div class="card-value" id="allTimeHigh">—</div>
+        <div class="card-sub" id="allTimeHighDate">—</div>
+      </div>
+    </div>
+
+    <!-- Chart Area -->
+    <div class="chart-container" id="chartContainer">
+      <div class="chart-header">
+        <h2 id="chartTitle">Select a location to view data</h2>
+        <div class="chart-actions">
+          <button class="btn-export" id="btnExportTwitter" disabled title="Export as Twitter-ready image (1200×675)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export for Twitter
+          </button>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="mainChart"></canvas>
+      </div>
+      <div class="chart-empty-state" id="emptyState">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+          opacity="0.3">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <p>Load your CREA HPI data file to get started</p>
+        <p class="hint">Click "Load Data" above or drag & drop the .xlsx file</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Hidden export canvas -->
+  <canvas id="exportCanvas" width="1200" height="675" style="display:none"></canvas>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Data source: CREA MLS® Home Price Index · Dashboard auto-generated from downloaded HPI data</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
