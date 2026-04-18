@@ -6,6 +6,7 @@
 let allData = {};           // { sheetName: { headers: [...], rows: [...] } }
 let locationMeta = {};      // { displayName: { sheetKey, type, region } }
 let mainChart = null;
+let changesChart = null;    // YoY/MoM chart
 let dataMinDate = null;     // overall min date in data
 let dataMaxDate = null;     // overall max date in data
 
@@ -519,12 +520,27 @@ function updateChart() {
     }
 
     // ── X-axis (time) ──
+    const mainColors = getChartColors();
     scales.x = {
         type: 'time',
         time: { unit: 'year', displayFormats: { year: 'yyyy', month: 'MMM yyyy' } },
-        ticks: { color: '#8b95b0', font: { family: 'Inter', size: 11 }, maxTicksLimit: 12 },
-        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: mainColors.tick, font: { family: 'Inter', size: 11 }, maxTicksLimit: 12 },
+        grid: { color: mainColors.grid },
     };
+
+    // Also patch y-axis colours in scales
+    for (const axKey of Object.keys(scales)) {
+        if (axKey !== 'x') {
+            const ax = scales[axKey];
+            if (ax.title) ax.title.color = mainColors.tick;
+            if (ax.ticks && !ax.ticks._colourSet) {
+                ax.ticks.color = mainColors.tick;
+            }
+            if (ax.grid && ax.grid.drawOnChartArea !== false) {
+                ax.grid.color = mainColors.grid;
+            }
+        }
+    }
 
     // ── Update or create chart ──
     if (mainChart) {
@@ -545,7 +561,7 @@ function updateChart() {
                     position: 'top',
                     align: 'start',
                     labels: {
-                        color: '#8b95b0',
+                        color: mainColors.tick,
                         font: { family: 'Inter', size: 12 },
                         padding: 16,
                         usePointStyle: true,
@@ -593,6 +609,9 @@ function updateChart() {
 
     // ── Update summary cards ──
     updateSummaryCards(series, chartDataType);
+
+    // ── Update YoY/MoM chart ──
+    updateChangesChart(location, propType, chartDataType);
 }
 
 function updateSummaryCards(series, chartDataType) {
@@ -656,6 +675,22 @@ function updateSummaryCards(series, chartDataType) {
         document.getElementById('allTimeHigh').textContent = isHPI ? maxVal.toFixed(1) : formatCurrency(maxVal);
         document.getElementById('allTimeHighDate').textContent = formatMonthYear(maxDate);
     }
+
+    // Selected range % change
+    if (data.length >= 2) {
+        const startPt = data[0];
+        const endPt = data[data.length - 1];
+        const rangeChange = ((endPt.y - startPt.y) / startPt.y) * 100;
+        const el = document.getElementById('rangeChange');
+        el.textContent = formatPercent(rangeChange);
+        el.className = 'card-value ' + (rangeChange >= 0 ? 'positive' : 'negative');
+        document.getElementById('rangeChangeLabel').textContent = 'Range Change';
+        document.getElementById('rangeChangeSub').textContent =
+            `${formatMonthYear(startPt.x)} → ${formatMonthYear(endPt.x)}`;
+    } else {
+        document.getElementById('rangeChange').textContent = '—';
+        document.getElementById('rangeChange').className = 'card-value';
+    }
 }
 
 function clearSummaryCards() {
@@ -667,6 +702,9 @@ function clearSummaryCards() {
     document.getElementById('change5Y').className = 'card-value';
     document.getElementById('allTimeHigh').textContent = '—';
     document.getElementById('allTimeHighDate').textContent = '—';
+    document.getElementById('rangeChange').textContent = '—';
+    document.getElementById('rangeChange').className = 'card-value';
+    document.getElementById('rangeChangeSub').textContent = 'From start to end of range';
 }
 
 function findClosestPoint(data, targetDate) {
@@ -703,6 +741,187 @@ function getFullSeriesData(locationName, propType, chartDataType) {
         }
     }
     return result;
+}
+
+// ═══════════ YoY / MoM CHANGES CHART ═══════════
+
+function computeChangeSeries(data) {
+    // data is array of { x: Date, y: number } sorted ascending
+    const yoyData = [];
+    const momData = [];
+
+    for (let i = 0; i < data.length; i++) {
+        const cur = data[i];
+
+        // MoM: compare with previous month
+        if (i > 0) {
+            const prev = data[i - 1];
+            const diffMonths = (cur.x.getFullYear() - prev.x.getFullYear()) * 12
+                + (cur.x.getMonth() - prev.x.getMonth());
+            if (diffMonths === 1 && prev.y !== 0) {
+                momData.push({ x: cur.x, y: ((cur.y - prev.y) / prev.y) * 100 });
+            } else {
+                momData.push({ x: cur.x, y: null });
+            }
+        }
+
+        // YoY: compare with same month 12 months ago
+        const targetDate = new Date(cur.x);
+        targetDate.setFullYear(targetDate.getFullYear() - 1);
+        const yrAgo = findClosestPoint(data, targetDate);
+        if (yrAgo && yrAgo.y !== 0) {
+            yoyData.push({ x: cur.x, y: ((cur.y - yrAgo.y) / yrAgo.y) * 100 });
+        } else {
+            yoyData.push({ x: cur.x, y: null });
+        }
+    }
+
+    return { yoyData, momData };
+}
+
+function getChartColors() {
+    // Read from CSS variables so the chart respects dark/light mode
+    const style = getComputedStyle(document.body);
+    return {
+        grid: style.getPropertyValue('--chart-grid').trim() || 'rgba(255,255,255,0.04)',
+        tick: style.getPropertyValue('--chart-tick').trim() || '#8b95b0',
+    };
+}
+
+function updateChangesChart(locationName, propType, chartDataType) {
+    const wrapper = document.getElementById('changesChartWrapper');
+    const emptyEl = document.getElementById('changesEmptyState');
+
+    const series = getSeriesData(locationName, propType, chartDataType);
+    if (!series) {
+        if (changesChart) { changesChart.destroy(); changesChart = null; }
+        wrapper.style.display = 'none';
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+
+    const rawData = (chartDataType === 'hpi') ? series.hpiData : series.benchmarkData;
+    if (!rawData || rawData.length < 2) {
+        if (changesChart) { changesChart.destroy(); changesChart = null; }
+        wrapper.style.display = 'none';
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+
+    wrapper.style.display = 'block';
+    emptyEl.classList.add('hidden');
+
+    const { yoyData, momData } = computeChangeSeries(rawData);
+    const colors = getChartColors();
+
+    if (changesChart) {
+        changesChart.destroy();
+    }
+
+    const ctx = document.getElementById('changesChart').getContext('2d');
+    changesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            datasets: [
+                {
+                    label: 'MoM Change (%)',
+                    data: momData,
+                    backgroundColor: momData.map(d =>
+                        d && d.y != null
+                            ? (d.y >= 0 ? 'rgba(16,185,129,0.35)' : 'rgba(244,63,94,0.35)')
+                            : 'transparent'
+                    ),
+                    borderColor: momData.map(d =>
+                        d && d.y != null
+                            ? (d.y >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(244,63,94,0.8)')
+                            : 'transparent'
+                    ),
+                    borderWidth: 1,
+                    borderRadius: 2,
+                    type: 'bar',
+                    yAxisID: 'y',
+                    order: 2,
+                    spanGaps: false,
+                },
+                {
+                    label: 'YoY Change (%)',
+                    data: yoyData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.5,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    fill: false,
+                    type: 'line',
+                    yAxisID: 'y',
+                    order: 1,
+                    spanGaps: false,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        color: colors.tick,
+                        font: { family: 'Inter', size: 12 },
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyleWidth: 16,
+                    },
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                    titleColor: '#f0f4fc',
+                    bodyColor: '#8b95b0',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    titleFont: { family: 'Inter', weight: '600' },
+                    bodyFont: { family: 'Inter' },
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        title: function(items) {
+                            const d = new Date(items[0].parsed.x);
+                            return formatMonthYear(d);
+                        },
+                        label: function(ctx) {
+                            if (ctx.parsed.y == null) return null;
+                            const sign = ctx.parsed.y >= 0 ? '+' : '';
+                            return `${ctx.dataset.label}: ${sign}${ctx.parsed.y.toFixed(2)}%`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'year', displayFormats: { year: 'yyyy', month: 'MMM yyyy' } },
+                    ticks: { color: colors.tick, font: { family: 'Inter', size: 11 }, maxTicksLimit: 12 },
+                    grid: { color: colors.grid },
+                },
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: 'Change (%)', color: colors.tick, font: { family: 'Inter', size: 11 } },
+                    ticks: {
+                        color: colors.tick,
+                        font: { family: 'Inter', size: 11 },
+                        callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%',
+                    },
+                    grid: { color: colors.grid },
+                },
+            },
+            animation: { duration: 500, easing: 'easeOutQuart' },
+        },
+    });
 }
 
 // ═══════════ PROPERTY TYPE FILTERING ═══════════
@@ -990,6 +1209,24 @@ chartTypeSelect.addEventListener('change', updateChart);
 
 // Export button
 btnExportTwitter.addEventListener('click', exportForTwitter);
+
+// ── Theme toggle ──
+const themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+    // Restore preference
+    if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-mode');
+    }
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        // Refresh charts so grid/tick colours update
+        if (locationSelect.value) {
+            updateChart();
+        }
+    });
+}
 
 // Drag & drop support (only active if Load Data button exists)
 const fileUploadLabel = document.getElementById('fileUploadLabel');

@@ -33,6 +33,14 @@
       </div>
       <div class="header-actions">
         <span class="data-status" id="dataStatus">No data loaded</span>
+        <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode" aria-label="Toggle theme">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -201,6 +209,11 @@
         <div class="card-value" id="allTimeHigh">—</div>
         <div class="card-sub" id="allTimeHighDate">—</div>
       </div>
+      <div class="card" id="cardRangeChange">
+        <div class="card-label" id="rangeChangeLabel">Selected Range Change</div>
+        <div class="card-value" id="rangeChange">—</div>
+        <div class="card-sub" id="rangeChangeSub">From start to end of range</div>
+      </div>
     </div>
 
     <!-- Chart Area -->
@@ -228,6 +241,26 @@
         </svg>
         <p>Load your CREA HPI data file to get started</p>
         <p class="hint">Click "Load Data" above or drag & drop the .xlsx file</p>
+      </div>
+    </div>
+
+    <!-- YoY / MoM Chart -->
+    <div class="chart-container chart-container--secondary" id="changesChartContainer">
+      <div class="chart-header">
+        <h2 id="changesChartTitle">Year-over-Year &amp; Month-over-Month Change</h2>
+        <div class="chart-legend-pills">
+          <span class="legend-pill legend-pill--yoy">YoY %</span>
+          <span class="legend-pill legend-pill--mom">MoM %</span>
+        </div>
+      </div>
+      <div class="chart-wrapper chart-wrapper--changes" id="changesChartWrapper">
+        <canvas id="changesChart"></canvas>
+      </div>
+      <div class="chart-empty-state chart-empty-state--changes hidden" id="changesEmptyState">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <p>Select a location to view YoY &amp; MoM changes</p>
       </div>
     </div>
   </main>
