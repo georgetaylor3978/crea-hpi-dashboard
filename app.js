@@ -1,8 +1,8 @@
-/* ═══════════════════════════════════════════
-   CREA HPI Dashboard — Application Logic
-   ═══════════════════════════════════════════ */
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CREA HPI Dashboard â€” Application Logic
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-// ── State ──
+// â”€â”€ State â”€â”€
 let allData = {};           // { sheetName: { headers: [...], rows: [...] } }
 let locationMeta = {};      // { displayName: { sheetKey, type, region } }
 let mainChart = null;
@@ -10,7 +10,7 @@ let changesChart = null;    // YoY/MoM chart
 let dataMinDate = null;     // overall min date in data
 let dataMaxDate = null;     // overall max date in data
 
-// ── Color Palette for chart lines ──
+// â”€â”€ Color Palette for chart lines â”€â”€
 const CHART_COLORS = {
     primary: { line: '#3b82f6', fill: 'rgba(59, 130, 246, 0.08)' },
     compare: { line: '#f59e0b', fill: 'rgba(245, 158, 11, 0.08)' },
@@ -18,7 +18,7 @@ const CHART_COLORS = {
     hpiCompare: { line: '#ec4899', fill: 'rgba(236, 72, 153, 0.08)' },
 };
 
-// ── Location mapping (display name → sheet name in import file) ──
+// â”€â”€ Location mapping (display name â†’ sheet name in import file) â”€â”€
 // Built from the crtl sheet data we extracted
 const LOCATION_MAP = {
     'Aggregate': { sheet: 'AGGREGATE', type: 'Country', region: 'CANADA' },
@@ -85,7 +85,7 @@ const LOCATION_MAP = {
 
 // Region display names
 const REGION_NAMES = {
-    'CANADA': '🇨🇦 Canada (National)',
+    'CANADA': 'ðŸ‡¨ðŸ‡¦ Canada (National)',
     'BC': 'British Columbia',
     'AB': 'Alberta',
     'SK': 'Saskatchewan',
@@ -113,7 +113,7 @@ const PROPERTY_COLUMNS = {
 };
 
 
-// ═══════════ DOM REFERENCES ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• DOM REFERENCES â•â•â•â•â•â•â•â•â•â•â•
 const fileInput = document.getElementById('fileInput');
 const dataStatus = document.getElementById('dataStatus');
 const locationSelect = document.getElementById('locationSelect');
@@ -140,7 +140,7 @@ let mpCurrentYear = 2025;
 let mpTarget = null; // 'dateFrom' or 'dateTo'
 
 
-// ═══════════ UTILITY FUNCTIONS ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• UTILITY FUNCTIONS â•â•â•â•â•â•â•â•â•â•â•
 
 /** Convert Excel serial date OR ISO date string to JavaScript Date */
 function excelDateToJS(serial) {
@@ -173,13 +173,13 @@ function formatMonthYear(date) {
 
 /** Format currency */
 function formatCurrency(val) {
-    if (val == null || isNaN(val)) return '—';
+    if (val == null || isNaN(val)) return 'â€”';
     return '$' + val.toLocaleString('en-CA', { maximumFractionDigits: 0 });
 }
 
 /** Format percentage */
 function formatPercent(val) {
-    if (val == null || isNaN(val)) return '—';
+    if (val == null || isNaN(val)) return 'â€”';
     const sign = val >= 0 ? '+' : '';
     return sign + val.toFixed(1) + '%';
 }
@@ -201,7 +201,7 @@ function showToast(message, type = 'success') {
 }
 
 
-// ═══════════ DATA LOADING ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• DATA LOADING â•â•â•â•â•â•â•â•â•â•â•
 
 function loadWorkbook(arrayBuffer) {
     const wb = XLSX.read(arrayBuffer, { type: 'array' });
@@ -261,8 +261,8 @@ function loadJSON(jsonData) {
 }
 
 function populateControls() {
-    // ── Build location dropdown, grouped by region ──
-    locationSelect.innerHTML = '<option value="">— Select Location —</option>';
+    // â”€â”€ Build location dropdown, grouped by region â”€â”€
+    locationSelect.innerHTML = '<option value="">â€” Select Location â€”</option>';
     compareLocation.innerHTML = '<option value="">None</option>';
 
     const grouped = {};
@@ -294,7 +294,7 @@ function populateControls() {
         });
 
         for (const item of items) {
-            const prefix = item.type === 'Province' ? '📊 ' : item.type === 'Country' ? '🏠 ' : '  ';
+            const prefix = item.type === 'Province' ? 'ðŸ“Š ' : item.type === 'Country' ? 'ðŸ  ' : '  ';
             const opt1 = new Option(prefix + item.name, item.name);
             const opt2 = new Option(prefix + item.name, item.name);
             group1.appendChild(opt1);
@@ -305,11 +305,11 @@ function populateControls() {
         compareLocation.appendChild(group2);
     }
 
-    // ── Filter property type options based on first available sheet ──
+    // â”€â”€ Filter property type options based on first available sheet â”€â”€
     // Some sheets have fewer columns (no Townhouse/Apartment)
     // We'll update available types when location changes
 
-    // ── Set date range ──
+    // â”€â”€ Set date range â”€â”€
     // Find the overall min/max dates from any sheet
     let minDateObj = null, maxDateObj = null;
     for (const sheetData of Object.values(allData)) {
@@ -342,7 +342,7 @@ function populateControls() {
 }
 
 
-// ═══════════ DATA EXTRACTION ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• DATA EXTRACTION â•â•â•â•â•â•â•â•â•â•â•
 
 function getSeriesData(locationName, propType, chartDataType) {
     const meta = LOCATION_MAP[locationName];
@@ -359,7 +359,7 @@ function getSeriesData(locationName, propType, chartDataType) {
     if (!hasHPI && !hasBenchmark) return null;
 
     const dateFromVal = dateFrom.value ? new Date(dateFrom.value + '-01') : null;
-    const dateToVal = dateTo.value ? new Date(dateTo.value + '-28') : null; // end of month approx
+    const dateToVal = dateTo.value ? new Date(dateTo.value.slice(0,4), parseInt(dateTo.value.slice(5,7)), 1) : null; // last moment of selected month (day 0 of next month = last day of this month)
 
     const hpiData = [];
     const benchmarkData = [];
@@ -384,7 +384,7 @@ function getSeriesData(locationName, propType, chartDataType) {
 }
 
 
-// ═══════════ CHART RENDERING ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• CHART RENDERING â•â•â•â•â•â•â•â•â•â•â•
 
 function updateChart() {
     const location = locationSelect.value;
@@ -418,7 +418,7 @@ function updateChart() {
     if (chartDataType === 'benchmark' || chartDataType === 'both') {
         if (series.hasBenchmark && series.benchmarkData.length > 0) {
             datasets.push({
-                label: `${location} — ${propLabel} Benchmark Price`,
+                label: `${location} â€” ${propLabel} Benchmark Price`,
                 data: series.benchmarkData,
                 borderColor: CHART_COLORS.primary.line,
                 backgroundColor: CHART_COLORS.primary.fill,
@@ -447,7 +447,7 @@ function updateChart() {
         if (series.hasHPI && series.hpiData.length > 0) {
             const axisId = chartDataType === 'both' ? 'y1' : 'y';
             datasets.push({
-                label: `${location} — ${propLabel} HPI`,
+                label: `${location} â€” ${propLabel} HPI`,
                 data: series.hpiData,
                 borderColor: chartDataType === 'both' ? CHART_COLORS.hpi.line : CHART_COLORS.primary.line,
                 backgroundColor: chartDataType === 'both' ? CHART_COLORS.hpi.fill : CHART_COLORS.primary.fill,
@@ -480,13 +480,13 @@ function updateChart() {
         }
     }
 
-    // ── Comparison location ──
+    // â”€â”€ Comparison location â”€â”€
     if (compareLoc && compareLoc !== location) {
         const compSeries = getSeriesData(compareLoc, propType, chartDataType);
         if (compSeries) {
             if ((chartDataType === 'benchmark' || chartDataType === 'both') && compSeries.hasBenchmark) {
                 datasets.push({
-                    label: `${compareLoc} — ${propLabel} Benchmark Price`,
+                    label: `${compareLoc} â€” ${propLabel} Benchmark Price`,
                     data: compSeries.benchmarkData,
                     borderColor: CHART_COLORS.compare.line,
                     backgroundColor: 'transparent',
@@ -501,7 +501,7 @@ function updateChart() {
             if ((chartDataType === 'hpi' || chartDataType === 'both') && compSeries.hasHPI) {
                 const axisId = chartDataType === 'both' ? 'y1' : 'y';
                 datasets.push({
-                    label: `${compareLoc} — ${propLabel} HPI`,
+                    label: `${compareLoc} â€” ${propLabel} HPI`,
                     data: compSeries.hpiData,
                     borderColor: chartDataType === 'both' ? CHART_COLORS.hpiCompare.line : CHART_COLORS.compare.line,
                     backgroundColor: 'transparent',
@@ -517,7 +517,7 @@ function updateChart() {
         }
     }
 
-    // ── X-axis (time) ──
+    // â”€â”€ X-axis (time) â”€â”€
     const mainColors = getChartColors();
     scales.x = {
         type: 'time',
@@ -540,7 +540,7 @@ function updateChart() {
         }
     }
 
-    // ── Update or create chart ──
+    // â”€â”€ Update or create chart â”€â”€
     if (mainChart) {
         mainChart.destroy();
     }
@@ -600,15 +600,15 @@ function updateChart() {
         },
     });
 
-    // ── Update title ──
+    // â”€â”€ Update title â”€â”€
     const meta = LOCATION_MAP[location];
     const typeLabel = meta ? `(${meta.type})` : '';
-    chartTitle.textContent = `${location} ${typeLabel} — ${propLabel}`;
+    chartTitle.textContent = `${location} ${typeLabel} â€” ${propLabel}`;
 
-    // ── Update summary cards ──
+    // â”€â”€ Update summary cards â”€â”€
     updateSummaryCards(series, chartDataType);
 
-    // ── Update YoY/MoM chart ──
+    // â”€â”€ Update YoY/MoM chart â”€â”€
     updateChangesChart(location, propType, chartDataType);
 }
 
@@ -640,7 +640,7 @@ function updateSummaryCards(series, chartDataType) {
         el.textContent = formatPercent(change);
         el.className = 'card-value ' + (change >= 0 ? 'positive' : 'negative');
     } else {
-        document.getElementById('change1Y').textContent = '—';
+        document.getElementById('change1Y').textContent = 'â€”';
         document.getElementById('change1Y').className = 'card-value';
     }
 
@@ -654,7 +654,7 @@ function updateSummaryCards(series, chartDataType) {
         el.textContent = formatPercent(change);
         el.className = 'card-value ' + (change >= 0 ? 'positive' : 'negative');
     } else {
-        document.getElementById('change5Y').textContent = '—';
+        document.getElementById('change5Y').textContent = 'â€”';
         document.getElementById('change5Y').className = 'card-value';
     }
 
@@ -684,23 +684,23 @@ function updateSummaryCards(series, chartDataType) {
         el.className = 'card-value ' + (rangeChange >= 0 ? 'positive' : 'negative');
         document.getElementById('rangeChangeLabel').textContent = 'Range Change';
         document.getElementById('rangeChangeSub').textContent =
-            `${formatMonthYear(startPt.x)} → ${formatMonthYear(endPt.x)}`;
+            `${formatMonthYear(startPt.x)} â†’ ${formatMonthYear(endPt.x)}`;
     } else {
-        document.getElementById('rangeChange').textContent = '—';
+        document.getElementById('rangeChange').textContent = 'â€”';
         document.getElementById('rangeChange').className = 'card-value';
     }
 }
 
 function clearSummaryCards() {
-    document.getElementById('latestPrice').textContent = '—';
-    document.getElementById('latestDate').textContent = '—';
-    document.getElementById('change1Y').textContent = '—';
+    document.getElementById('latestPrice').textContent = 'â€”';
+    document.getElementById('latestDate').textContent = 'â€”';
+    document.getElementById('change1Y').textContent = 'â€”';
     document.getElementById('change1Y').className = 'card-value';
-    document.getElementById('change5Y').textContent = '—';
+    document.getElementById('change5Y').textContent = 'â€”';
     document.getElementById('change5Y').className = 'card-value';
-    document.getElementById('allTimeHigh').textContent = '—';
-    document.getElementById('allTimeHighDate').textContent = '—';
-    document.getElementById('rangeChange').textContent = '—';
+    document.getElementById('allTimeHigh').textContent = 'â€”';
+    document.getElementById('allTimeHighDate').textContent = 'â€”';
+    document.getElementById('rangeChange').textContent = 'â€”';
     document.getElementById('rangeChange').className = 'card-value';
     document.getElementById('rangeChangeSub').textContent = 'From start to end of range';
 }
@@ -741,7 +741,7 @@ function getFullSeriesData(locationName, propType, chartDataType) {
     return result;
 }
 
-// ═══════════ YoY / MoM CHANGES CHART ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• YoY / MoM CHANGES CHART â•â•â•â•â•â•â•â•â•â•â•
 
 function computeChangeSeries(data) {
     // data is array of { x: Date, y: number } sorted ascending
@@ -933,7 +933,7 @@ function updateChangesChart(locationName, propType, chartDataType) {
     });
 }
 
-// ═══════════ PROPERTY TYPE FILTERING ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• PROPERTY TYPE FILTERING â•â•â•â•â•â•â•â•â•â•â•
 
 function updateAvailablePropertyTypes() {
     const location = locationSelect.value;
@@ -962,7 +962,7 @@ function updateAvailablePropertyTypes() {
 
 
 
-// ═══════════ MONTH PICKER LOGIC ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• MONTH PICKER LOGIC â•â•â•â•â•â•â•â•â•â•â•
 
 const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -1094,7 +1094,7 @@ monthPickerPopup.addEventListener('click', (e) => {
     e.stopPropagation();
 });
 
-// ═══════════ QUICK RANGE BUTTONS ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• QUICK RANGE BUTTONS â•â•â•â•â•â•â•â•â•â•â•
 
 document.querySelectorAll('.quick-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1120,7 +1120,7 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
 });
 
 
-// ═══════════ EVENT LISTENERS ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• EVENT LISTENERS â•â•â•â•â•â•â•â•â•â•â•
 
 // File upload (only if Load Data button exists)
 if (fileInput) {
@@ -1134,7 +1134,7 @@ if (fileInput) {
         try {
             const buffer = await file.arrayBuffer();
             const count = loadWorkbook(buffer);
-            dataStatus.textContent = `✓ ${count} locations loaded`;
+            dataStatus.textContent = `âœ“ ${count} locations loaded`;
             dataStatus.className = 'data-status loaded';
             populateControls();
             showToast(`Loaded ${count} location datasets from ${file.name}`, 'success');
@@ -1158,7 +1158,7 @@ propertyType.addEventListener('change', updateChart);
 chartTypeSelect.addEventListener('change', updateChart);
 
 
-// ── Theme toggle ──
+// â”€â”€ Theme toggle â”€â”€
 const themeToggle = document.getElementById('themeToggle');
 if (themeToggle) {
     // Restore preference
@@ -1181,7 +1181,7 @@ const fileUploadLabel = document.getElementById('fileUploadLabel');
 if (fileUploadLabel) {
     const dropOverlay = document.createElement('div');
     dropOverlay.className = 'drop-overlay';
-    dropOverlay.innerHTML = '<div class="drop-box"><p>📂 Drop your CREA HPI .xlsx file here</p><p class="hint">House Price Import.xlsx</p></div>';
+    dropOverlay.innerHTML = '<div class="drop-box"><p>ðŸ“‚ Drop your CREA HPI .xlsx file here</p><p class="hint">House Price Import.xlsx</p></div>';
     document.body.appendChild(dropOverlay);
 
     let dragCounter = 0;
@@ -1220,7 +1220,7 @@ if (fileUploadLabel) {
         try {
             const buffer = await file.arrayBuffer();
             const count = loadWorkbook(buffer);
-            dataStatus.textContent = `✓ ${count} locations loaded`;
+            dataStatus.textContent = `âœ“ ${count} locations loaded`;
             dataStatus.className = 'data-status loaded';
             populateControls();
             showToast(`Loaded ${count} location datasets from ${file.name}`, 'success');
@@ -1230,7 +1230,7 @@ if (fileUploadLabel) {
     });
 }
 
-// ═══════════ AUTO-LOAD ═══════════
+// â•â•â•â•â•â•â•â•â•â•â• AUTO-LOAD â•â•â•â•â•â•â•â•â•â•â•
 // Try to load pre-baked data.json first, fall back to xlsx
 async function tryAutoLoad() {
     // Try data.json first (deployed/published version)
@@ -1239,7 +1239,7 @@ async function tryAutoLoad() {
         if (resp.ok) {
             const jsonData = await resp.json();
             const count = loadJSON(jsonData);
-            dataStatus.textContent = `✓ ${count} locations loaded`;
+            dataStatus.textContent = `âœ“ ${count} locations loaded`;
             dataStatus.className = 'data-status loaded';
             populateControls();
             showToast(`Loaded ${count} location datasets`, 'success');
@@ -1262,7 +1262,7 @@ async function tryAutoLoad() {
                 if (resp.ok) {
                     const buffer = await resp.arrayBuffer();
                     const count = loadWorkbook(buffer);
-                    dataStatus.textContent = `✓ ${count} locations loaded`;
+                    dataStatus.textContent = `âœ“ ${count} locations loaded`;
                     dataStatus.className = 'data-status loaded';
                     populateControls();
                     showToast(`Auto-loaded ${count} location datasets`, 'success');
@@ -1281,4 +1281,5 @@ async function tryAutoLoad() {
 
 // Auto-load on page ready
 tryAutoLoad();
+
 
