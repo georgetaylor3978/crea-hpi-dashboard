@@ -1,8 +1,8 @@
 /**
- * update-data.js — Converts House Price Import.xlsx → data.json
- * 
+ * update-data.js - Converts House Price Import.xlsx -> data.json
+ *
  * Usage: node update-data.js
- * 
+ *
  * This script reads "House Price Import.xlsx" from the same directory
  * and produces a compact "data.json" that the dashboard loads.
  */
@@ -14,18 +14,18 @@ const path = require('path');
 const INPUT_FILE = 'House Price Import.xlsx';
 const OUTPUT_FILE = 'data.json';
 
-console.log(`\n📊 CREA HPI Data Converter`);
-console.log(`${'─'.repeat(40)}`);
+console.log('\n[INFO] CREA HPI Data Converter');
+console.log('-'.repeat(40));
 
 // Check input file exists
 const inputPath = path.join(__dirname, INPUT_FILE);
 if (!fs.existsSync(inputPath)) {
-    console.error(`\n❌ Error: "${INPUT_FILE}" not found!`);
+    console.error(`\n[ERROR] "${INPUT_FILE}" not found!`);
     console.error(`   Make sure the file is in: ${__dirname}`);
     process.exit(1);
 }
 
-console.log(`📂 Reading: ${INPUT_FILE}`);
+console.log(`[INFO] Reading: ${INPUT_FILE}`);
 const wb = XLSX.readFile(inputPath);
 console.log(`   Found ${wb.SheetNames.length} location sheets`);
 
@@ -74,13 +74,13 @@ for (const sheetName of wb.SheetNames) {
     totalRows += rows.length;
 }
 
-// Write JSON
+// Write JSON (explicit UTF-8 encoding to prevent character corruption on refresh)
 const outputPath = path.join(__dirname, OUTPUT_FILE);
 const json = JSON.stringify(output);
-fs.writeFileSync(outputPath, json);
+fs.writeFileSync(outputPath, json, { encoding: 'utf8' });
 
 const sizeMB = (Buffer.byteLength(json) / 1024 / 1024).toFixed(2);
-console.log(`\n✅ Generated: ${OUTPUT_FILE}`);
+console.log(`\n[OK] Generated: ${OUTPUT_FILE}`);
 console.log(`   ${wb.SheetNames.length} locations, ${totalRows} data points`);
 console.log(`   File size: ${sizeMB} MB`);
 
@@ -89,7 +89,7 @@ const firstSheet = output[wb.SheetNames[0]];
 if (firstSheet && firstSheet.rows.length > 0) {
     const firstDate = firstSheet.rows[0][0];
     const lastDate = firstSheet.rows[firstSheet.rows.length - 1][0];
-    console.log(`   Date range: ${firstDate} → ${lastDate}`);
+    console.log(`   Date range: ${firstDate} -> ${lastDate}`);
 }
 
-console.log(`\n🚀 Data is ready! Run "update.bat" to push to GitHub.\n`);
+console.log('\n[OK] Data is ready! Run "update.bat" to push to GitHub.\n');
